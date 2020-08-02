@@ -1,5 +1,95 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="index, follow"><title>weblogic 10.3.6 XMLDecoder 反序列化漏洞学习 • Hexo</title><meta name="description" content="weblogic 10.3.6 XMLDecoder 反序列化漏洞学习 - John Doe"><link rel="icon" href="https://l0ca1-blog.oss-cn-beijing.aliyuncs.com/imgs/23295562.jpeg"><link rel="stylesheet" href="https://unpkg.com/nanoreset@3.0.1/nanoreset.min.css"><link rel="stylesheet" href="/css/theme.css"><link rel="search" type="application/opensearchdescription+xml" href="/atom.xml" title="Hexo"><meta name="generator" content="Hexo 4.2.1"><link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
-</head><body><div class="wrap" id="barba-wrapper"><header><h1 class="branding"><a href="/" title="Hexo"><img class="logo-image" src="https://l0ca1-blog.oss-cn-beijing.aliyuncs.com/imgs/23295562.jpeg" alt="logo"></a></h1><ul class="nav nav-list"><li class="nav-list-item"><a class="nav-list-link no-barba" href="/" target="_self">HOME</a></li><li class="nav-list-item"><a class="nav-list-link no-barba" href="/about" target="_self">ABOUT</a></li><li class="nav-list-item"><a class="nav-list-link no-barba" href="/archives" target="_self">ARCHIVES</a></li><li class="nav-list-item"><a class="nav-list-link no-barba" href="/links" target="_self">LINKS</a></li><li class="nav-list-item"><a class="nav-list-link no-barba" href="https://github.com/l0ca1" target="_blank">GITHUB</a></li></ul></header><div class="barba-container"><main class="container"><div class="post"><article class="post-block"><h1 class="post-title">weblogic 10.3.6 XMLDecoder 反序列化漏洞学习</h1><div class="post-info"><a></a>2020-07-07</div><div class="post-content"><p>文章整体学习于 <a href="https://mp.weixin.qq.com/s?__biz=MzU5NDgxODU1MQ==&mid=2247485058&idx=1&sn=d22b310acf703a32d938a7087c8e8704" target="_blank" rel="noopener">奇安信 WebLogic 安全研究报告</a></p>
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>weblogic 10.3.6 XMLDecoder 反序列化漏洞学习 | l0ca1</title>
+
+  
+  <meta name="author" content="l0ca1">
+  
+
+  
+  <meta name="description" content="文章整体学习于 奇安信 WebLogic 安全研究报告">
+  
+
+  
+  
+  <meta name="keywords" content="">
+  
+
+  <meta id="viewport" name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+
+  <meta property="og:title" content="weblogic 10.3.6 XMLDecoder 反序列化漏洞学习"/>
+
+  <meta property="og:site_name" content="l0ca1"/>
+
+  
+  <meta property="og:image" content="/favicon.ico"/>
+  
+
+  <link href="/favicon.ico" rel="icon">
+  <link rel="alternate" href="/atom.xml" title="l0ca1" type="application/atom+xml">
+  <link rel="stylesheet" href="/css/style.css" media="screen" type="text/css">
+<meta name="generator" content="Hexo 4.2.1"></head>
+
+
+<body>
+<div class="blog">
+  <div class="content">
+
+    <header>
+  <div class="site-branding">
+    <h1 class="site-title">
+      <a href="/">l0ca1</a>
+    </h1>
+    <p class="site-description"></p>
+  </div>
+  <nav class="site-navigation">
+    <ul>
+      
+        <li><a href="/">Home</a></li>
+      
+        <li><a href="/about">About</a></li>
+      
+        <li><a href="https://github.com/l0ca1" target="_blank" rel="noopener">GitHub</a></li>
+      
+        <li><a href="/links">Links</a></li>
+      
+    </ul>
+  </nav>
+</header>
+
+    <main class="site-main posts-loop">
+    <article>
+
+  
+    
+    <h3 class="article-title"><span>weblogic 10.3.6 XMLDecoder 反序列化漏洞学习</span></h3>
+    
+  
+
+  <div class="article-top-meta">
+    <span class="posted-on">
+      <a href="/2020/07/07/weblogic-10-3-6-XMLDecoder-反序列化漏洞学习/" rel="bookmark">
+        <time class="entry-date published" datetime="2020-07-06T16:55:03.000Z">
+          2020-07-07
+        </time>
+      </a>
+    </span>
+  </div>
+
+
+  
+
+  <div class="article-content">
+    <div class="entry">
+      
+        <p>文章整体学习于 <a href="https://mp.weixin.qq.com/s?__biz=MzU5NDgxODU1MQ==&mid=2247485058&idx=1&sn=d22b310acf703a32d938a7087c8e8704" target="_blank" rel="noopener">奇安信 WebLogic 安全研究报告</a></p>
+<a id="more"></a>
+
 <h2 id="sax-解析-xml-基础"><a href="#sax-解析-xml-基础" class="headerlink" title="sax 解析 xml 基础"></a>sax 解析 xml 基础</h2><p>java 在使用 sax 处理 xml 时，采用事件进行处理，那我们我们需要关注有哪些事件。<br>事件源有 4 种：ContentHandler,DTDHandler,ErrorHandler,以及 EntityResolver。<br>处理内容的事件源是 ContentHandler，看一下他的事件（<a href="http://www.saxproject.org/apidoc/org/xml/sax/ContentHandler.html" target="_blank" rel="noopener">截图来源</a>）：<br><img src="http://l0ca1-blog.oss-cn-beijing.aliyuncs.com/imgs/396790baee89469ea39fea0cf604cfd02.png" alt="396790baee89469ea39fea0cf604cfd02"><br><a href="https://www.ibm.com/developerworks/cn/xml/x-saxhandle/index.html" target="_blank" rel="noopener">中文文档</a><br>引用一张图（<a href="https://xz.aliyun.com/t/5069" target="_blank" rel="noopener">来源</a>）：<br><img src="http://l0ca1-blog.oss-cn-beijing.aliyuncs.com/imgs/396790baee89469ea39fea0cf604cfd01.png" alt="396790baee89469ea39fea0cf604cfd01"><br>根据头部文章的说明及其调试，xml 反序列化流程会先进入 DocumentHandler，对各类事件源进行处理，同时在处理的过程中再分发到相关的标签 ElementHandler。看一下 DocumentHandler 的处理。</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//根据标签添加各种标签ElementHandler。</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="title">DocumentHandler</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.setElementHandler(<span class="string">"java"</span>, JavaElementHandler<span class="class">.<span class="keyword">class</span>)</span>;</span><br><span class="line">        <span class="keyword">this</span>.setElementHandler(<span class="string">"null"</span>, NullElementHandler<span class="class">.<span class="keyword">class</span>)</span>;</span><br><span class="line">        <span class="keyword">this</span>.setElementHandler(<span class="string">"array"</span>, ArrayElementHandler<span class="class">.<span class="keyword">class</span>)</span>;</span><br><span class="line">        ......</span><br><span class="line">    &#125;</span><br><span class="line"><span class="comment">//开始解析各种标签</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">startElement</span><span class="params">(String var1, String var2, String var3, Attributes var4)</span> <span class="keyword">throws</span> SAXException </span>&#123;</span><br><span class="line">        <span class="comment">//保存上一级ElementHandler对象，通过setParent保存在this.parent中</span></span><br><span class="line">				ElementHandler var5 = <span class="keyword">this</span>.handler;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">				<span class="comment">//根据标签名，通过getElementHandler获取保存的各类ElementHandler。</span></span><br><span class="line">            <span class="keyword">this</span>.handler = (ElementHandler)<span class="keyword">this</span>.getElementHandler(var3).newInstance();</span><br><span class="line">            <span class="keyword">this</span>.handler.setOwner(<span class="keyword">this</span>);</span><br><span class="line">            <span class="keyword">this</span>.handler.setParent(var5);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception var10) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> SAXException(var10);</span><br><span class="line">        &#125;</span><br><span class="line">				<span class="comment">//遍历各类属性，通过addAttribute进行保存设置。</span></span><br><span class="line">        <span class="keyword">for</span>(<span class="keyword">int</span> var6 = <span class="number">0</span>; var6 &lt; var4.getLength(); ++var6) &#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">				<span class="comment">//获取属性名字和属性值。</span></span><br><span class="line">                String var7 = var4.getQName(var6);</span><br><span class="line">                String var8 = var4.getValue(var6);</span><br><span class="line">                <span class="keyword">this</span>.handler.addAttribute(var7, var8);</span><br><span class="line">            &#125; <span class="keyword">catch</span> (RuntimeException var9) &#123;</span><br><span class="line">                <span class="keyword">this</span>.handleException(var9);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">				<span class="comment">//调用ElementHandler的startElement。</span></span><br><span class="line">        <span class="keyword">this</span>.handler.startElement();</span><br><span class="line">    &#125;</span><br><span class="line"><span class="comment">//结束标签解析</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">endElement</span><span class="params">(String var1, String var2, String var3)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line"><span class="comment">//直接调用ElementHandler的endElement</span></span><br><span class="line">            <span class="keyword">this</span>.handler.endElement();</span><br><span class="line">        &#125; <span class="keyword">catch</span> (RuntimeException var8) &#123;</span><br><span class="line">            <span class="keyword">this</span>.handleException(var8);</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            <span class="keyword">this</span>.handler = <span class="keyword">this</span>.handler.getParent();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
 
@@ -38,6 +128,43 @@
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//URLRESOURCE</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> InputStream <span class="title">getInputStream</span><span class="params">()</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">        URLConnection con = <span class="keyword">this</span>.url.openConnection();</span><br><span class="line">        con.setUseCaches(<span class="keyword">false</span>);</span><br><span class="line">        <span class="keyword">return</span> con.getInputStream();</span><br><span class="line">    &#125;</span><br><span class="line"><span class="comment">//FILERESOURCE</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> InputStream <span class="title">getInputStream</span><span class="params">()</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> FileInputStream(<span class="keyword">this</span>.file);</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
 
 <p>后面的工作就是解析 XML 文件返回 bean 对象。<br>因为 bean 提供一个 init-method 属性，他表现在 BeanDefinition 的 initMethodName 属性中，如果存在此属性，则会在导出对象时，通过反射进行调用。<br>虽然还有一个 destroyMethodName 属性，后续也可以利用来进行反射，但是需要 FileSystemXmlApplication 在执行 close 方法后才会进行反射调用，在构造函数中肯定是不会调用 close 的。</p>
-</div></article></div></main><footer><div class="paginator"><a class="prev" href="/2020/08/02/Linux%E4%B8%8B%E5%9F%BA%E4%BA%8Elkm%E7%9A%84inline-hook%E5%AD%A6%E4%B9%A0/">prev</a><a class="next" href="/2018/11/25/Code-Breaking-JS/">next</a></div><div class="copyright"><p>&copy; 2019 - 2020 <a href="https://blog.l0ca1.xyz" target="_blank" rel="noopener">l0ca1</a><br>Powered by <a href="https://hexo.io/" rel="noreferrer" target="_blank">Hexo</a></p></div></footer></div></div><script src="https://cdnjs.cloudflare.com/ajax/libs/barba.js/1.0.0/barba.min.js"></script><script>document.addEventListener('DOMContentLoaded', function() {
-    Barba.Pjax.start()
-})</script></body></html>
+
+      
+    </div>
+
+  </div>
+
+  <div class="article-footer">
+    <div class="article-meta pull-left">
+
+    
+
+    
+
+    </div>
+
+    
+  </div>
+</article>
+
+  
+
+
+
+
+
+
+    </main>
+
+    <footer class="site-footer">
+  <p class="site-info">
+    
+    &copy; 2020 l0ca1
+    
+  </p>
+</footer>
+    
+  </div>
+</div>
+</body>
+</html>
